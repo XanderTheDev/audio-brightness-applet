@@ -56,6 +56,10 @@ pub struct Cli {
     /// Direction to slide in from ("auto", "top", "bottom", "left", "right")
     #[arg(long, value_enum, default_value_t = SlideDirection::Auto)]
     pub slide_direction: SlideDirection,
+
+    /// Animation duration in milliseconds
+    #[arg(long, default_value_t = 250)]
+    pub animation_duration: u32,
 }
 
 fn main() -> glib::ExitCode {
@@ -140,6 +144,7 @@ fn build_ui(app: &Application, args: &Cli) {
         audio_manager,
         args.animation,
         args.slide_direction,
+        args.animation_duration,
         anchor_top,
     );
     window.set_child(Some(&root_widget));

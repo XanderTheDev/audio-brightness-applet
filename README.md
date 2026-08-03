@@ -52,6 +52,7 @@ If the window is already open, running the command again closes it (toggle behav
 | `--margin-side` | `12` | Horizontal margin in pixels from left/right |
 | `--animation` | `fade` | Entry animation style (`none`, `fade`, or `slide`) |
 | `--slide-direction` | `auto` | Direction to slide in from (`auto`, `top`, `bottom`, `left`, or `right`) |
+| `--animation-duration` | `250` | Animation duration in milliseconds |
 
 #### Examples
 

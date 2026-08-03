@@ -38,7 +38,7 @@
         # Build Output (`nix build`)
         packages.default = pkgs.rustPlatform.buildRustPackage {
           pname = "audio-brightness-applet";
-          version = "1.0.1";
+          version = "1.0.2";
           src = ./.;
 
           cargoLock.lockFile = ./Cargo.lock;

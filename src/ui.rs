@@ -11,15 +11,10 @@ use crate::audio::{AudioManager, Device};
 use crate::brightness::{self, BacklightDevice};
 use crate::{AnimationType, SlideDirection};
 
-/// One "Output"/"Input" row: a device dropdown, a volume slider, and a
-/// mute toggle button, plus the bookkeeping needed to map the dropdown's
-/// selected index back to a PulseAudio device and to avoid feedback loops
-/// when we update widgets programmatically.
 struct DeviceRow {
     dropdown: DropDown,
     scale: Scale,
     mute_button: Button,
-    /// Devices currently shown in the dropdown, in display order.
     devices: Rc<RefCell<Vec<Device>>>,
 }
 
@@ -58,7 +53,6 @@ fn build_device_row(
 
     let devices: Rc<RefCell<Vec<Device>>> = Rc::new(RefCell::new(Vec::new()));
 
-    // Dropdown selection -> set as default device.
     {
         let devices = devices.clone();
         let updating = updating.clone();
@@ -76,7 +70,6 @@ fn build_device_row(
         });
     }
 
-    // Slider drag -> set volume on the currently selected device.
     {
         let devices = devices.clone();
         let dropdown_weak = dropdown.downgrade();
@@ -98,7 +91,6 @@ fn build_device_row(
         });
     }
 
-    // Mute button -> toggle mute on the currently selected device.
     {
         let devices = devices.clone();
         let dropdown_weak = dropdown.downgrade();
@@ -127,8 +119,6 @@ fn build_device_row(
     )
 }
 
-/// Push a fresh device list + default selection + volume into a row's
-/// widgets, without triggering the row's own change handlers.
 fn sync_device_row(
     row: &DeviceRow,
     devices: &[Device],
@@ -167,13 +157,11 @@ fn sync_device_row(
     updating.set(false);
 }
 
-/// Builds the full popup content wrapped conditionally with GTK's Revealer.
-/// Returns a `(Widget, Option<Revealer>)` tuple so main can present the window
-/// and trigger `revealer.set_reveal_child(true)`.
 pub fn build_content(
     audio: Rc<AudioManager>,
     animation: AnimationType,
     slide_direction: SlideDirection,
+    animation_duration: u32,
     anchor_top: bool,
 ) -> (Widget, Option<Revealer>) {
     let root = GtkBox::new(Orientation::Vertical, 14);
@@ -218,7 +206,6 @@ pub fn build_content(
     };
     root.append(&input_box);
 
-    // --- Brightness ---
     if let Some(backlight) = brightness::detect_device() {
         let brightness_box = GtkBox::new(Orientation::Vertical, 6);
         brightness_box.add_css_class("abapplet-section");
@@ -254,7 +241,6 @@ pub fn build_content(
         root.append(&warning);
     }
 
-    // --- Wire audio state updates ---
     audio.set_on_update(move |state: &crate::audio::AudioState| {
         sync_device_row(
             &output_row,
@@ -270,13 +256,12 @@ pub fn build_content(
         );
     });
 
-    // --- Animation Wrapping ---
     match animation {
         AnimationType::None => (root.upcast::<Widget>(), None),
         AnimationType::Fade | AnimationType::Slide => {
             let revealer = Revealer::new();
             revealer.set_child(Some(&root));
-            revealer.set_transition_duration(250);
+            revealer.set_transition_duration(animation_duration);
 
             let transition = match animation {
                 AnimationType::Fade => RevealerTransitionType::Crossfade,
@@ -304,8 +289,6 @@ pub fn build_content(
     }
 }
 
-/// Load the bundled stylesheet as the default CSS for the whole
-/// application (touch-friendly sizing lives here).
 pub fn load_css() {
     let provider = gtk4::CssProvider::new();
     provider.load_from_data(include_str!("../style.css"));
