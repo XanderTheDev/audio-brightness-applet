@@ -1,0 +1,43 @@
+.abapplet-section {
+    padding: 4px;
+}
+
+.abapplet-heading {
+    font-weight: bold;
+    font-size: 0.95em;
+    opacity: 0.8;
+    color: @theme_fg_color;
+}
+
+.abapplet-dropdown {
+    min-height: 38px;
+}
+
+.abapplet-scale {
+    min-height: 32px;
+}
+
+.abapplet-mute-button {
+    min-width: 36px;
+    min-height: 36px;
+}
+
+.abapplet-warning {
+    color: @warning_color;
+    font-size: 0.85em;
+}
+
+.abapplet-root {
+    background-color: #0c0d15;
+    border-radius: 8px;
+    border: 3px solid transparent;
+    background-image: 
+        linear-gradient(#0c0d15, #0c0d15), 
+        linear-gradient(90deg, #E06564, #7783A9, #ebc4cb);
+    background-origin: border-box;
+    background-clip: padding-box, border-box;
+}
+
+window {
+    background-color: transparent;
+}
