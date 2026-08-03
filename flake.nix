@@ -6,7 +6,7 @@
       "https://audio-brightness-applet.cachix.org"
     ];
     extra-trusted-public-keys = [
-      "audio-brightness-applet.cachix.org-1:audio-brightness-applet.cachix.org-1:RCWMTeprJ+27QtkEg/0fbEkoDtI/Zqc8vUG/APXmJJw="
+      "audio-brightness-applet.cachix.org-1:RCWMTeprJ+27QtkEg/0fbEkoDtI/Zqc8vUG/APXmJJw="
     ];
   };
 
