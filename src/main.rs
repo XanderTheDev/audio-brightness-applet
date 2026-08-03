@@ -1,6 +1,6 @@
 use std::cell::RefCell;
 
-use clap::Parser;
+use clap::{Parser, ValueEnum};
 use gtk4::prelude::*;
 use gtk4::{gio, glib, Application, ApplicationWindow};
 use gtk4_layer_shell::{Edge, KeyboardMode, Layer, LayerShell};
@@ -12,6 +12,22 @@ mod ui;
 
 thread_local! {
     static PULSE_MAINLOOP: RefCell<Option<Mainloop>> = const { RefCell::new(None) };
+}
+
+#[derive(ValueEnum, Debug, Clone, Copy, PartialEq, Eq)]
+pub enum AnimationType {
+    None,
+    Fade,
+    Slide,
+}
+
+#[derive(ValueEnum, Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SlideDirection {
+    Auto,
+    Top,
+    Bottom,
+    Left,
+    Right,
 }
 
 #[derive(Parser, Debug, Clone)]
@@ -32,6 +48,14 @@ pub struct Cli {
     /// Vertical anchor position ("top" or "bottom")
     #[arg(long, default_value = "top")]
     pub vertical_anchor: String,
+
+    /// Choose entry animation style ("none", "fade", or "slide")
+    #[arg(long, value_enum, default_value_t = AnimationType::Fade)]
+    pub animation: AnimationType,
+
+    /// Direction to slide in from ("auto", "top", "bottom", "left", "right")
+    #[arg(long, value_enum, default_value_t = SlideDirection::Auto)]
+    pub slide_direction: SlideDirection,
 }
 
 fn main() -> glib::ExitCode {
@@ -46,7 +70,6 @@ fn main() -> glib::ExitCode {
     app.connect_command_line(move |app, _cmdline| {
         let windows = app.windows();
         if !windows.is_empty() {
-            // Re-click from Waybar -> close window cleanly (Toggle off)
             for win in windows {
                 win.close();
             }
@@ -75,7 +98,6 @@ fn build_ui(app: &Application, args: &Cli) {
         .title("Audio & Brightness")
         .build();
 
-    // Clean up thread-local Mainloop reference when window closes
     window.connect_destroy(|_| {
         PULSE_MAINLOOP.with(|m| {
             *m.borrow_mut() = None;
@@ -96,7 +118,7 @@ fn build_ui(app: &Application, args: &Cli) {
         window.set_margin(Edge::Bottom, args.margin_top);
     }
 
-    // --- Horizontal Placement (Left / Right / Center) ---
+    // --- Horizontal Placement ---
     match args.anchor.to_lowercase().as_str() {
         "left" => {
             window.set_anchor(Edge::Left, true);
@@ -104,20 +126,23 @@ fn build_ui(app: &Application, args: &Cli) {
             window.set_margin(Edge::Left, args.margin_side);
         }
         "center" | "middle" => {
-            // Unset left & right anchors: layer-shell automatically centers unanchored axes!
             window.set_anchor(Edge::Left, false);
             window.set_anchor(Edge::Right, false);
         }
         _ => {
-            // Default: Right
             window.set_anchor(Edge::Right, true);
             window.set_anchor(Edge::Left, false);
             window.set_margin(Edge::Right, args.margin_side);
         }
     }
 
-    let content_box = ui::build_content(audio_manager);
-    window.set_child(Some(&content_box));
+    let (root_widget, revealer) = ui::build_content(
+        audio_manager,
+        args.animation,
+        args.slide_direction,
+        anchor_top,
+    );
+    window.set_child(Some(&root_widget));
 
     // Escape key listener to close
     let key_controller = gtk4::EventControllerKey::new();
@@ -135,4 +160,8 @@ fn build_ui(app: &Application, args: &Cli) {
     window.add_controller(key_controller);
 
     window.present();
+
+    if let Some(rev) = revealer {
+        rev.set_reveal_child(true);
+    }
 }

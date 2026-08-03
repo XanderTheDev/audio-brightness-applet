@@ -2,10 +2,14 @@ use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 
 use gtk4::prelude::*;
-use gtk4::{Align, Box as GtkBox, Button, DropDown, Label, Orientation, Scale, StringList};
+use gtk4::{
+    Align, Box as GtkBox, Button, DropDown, Label, Orientation, Revealer, RevealerTransitionType,
+    Scale, StringList, Widget,
+};
 
 use crate::audio::{AudioManager, Device};
 use crate::brightness::{self, BacklightDevice};
+use crate::{AnimationType, SlideDirection};
 
 /// One "Output"/"Input" row: a device dropdown, a volume slider, and a
 /// mute toggle button, plus the bookkeeping needed to map the dropdown's
@@ -163,11 +167,15 @@ fn sync_device_row(
     updating.set(false);
 }
 
-/// Builds the full popup content: output row, input row, and (if a
-/// backlight device was found) a brightness slider. Wires everything up to
-/// the given `AudioManager` and returns the top-level widget to place in
-/// the layer-shell window.
-pub fn build_content(audio: Rc<AudioManager>) -> GtkBox {
+/// Builds the full popup content wrapped conditionally with GTK's Revealer.
+/// Returns a `(Widget, Option<Revealer>)` tuple so main can present the window
+/// and trigger `revealer.set_reveal_child(true)`.
+pub fn build_content(
+    audio: Rc<AudioManager>,
+    animation: AnimationType,
+    slide_direction: SlideDirection,
+    anchor_top: bool,
+) -> (Widget, Option<Revealer>) {
     let root = GtkBox::new(Orientation::Vertical, 14);
     root.add_css_class("abapplet-root");
     root.set_margin_bottom(16);
@@ -246,7 +254,7 @@ pub fn build_content(audio: Rc<AudioManager>) -> GtkBox {
         root.append(&warning);
     }
 
-    // --- Wire audio state updates into the two device rows ---
+    // --- Wire audio state updates ---
     audio.set_on_update(move |state: &crate::audio::AudioState| {
         sync_device_row(
             &output_row,
@@ -262,7 +270,38 @@ pub fn build_content(audio: Rc<AudioManager>) -> GtkBox {
         );
     });
 
-    root
+    // --- Animation Wrapping ---
+    match animation {
+        AnimationType::None => (root.upcast::<Widget>(), None),
+        AnimationType::Fade | AnimationType::Slide => {
+            let revealer = Revealer::new();
+            revealer.set_child(Some(&root));
+            revealer.set_transition_duration(250);
+
+            let transition = match animation {
+                AnimationType::Fade => RevealerTransitionType::Crossfade,
+                AnimationType::Slide => match slide_direction {
+                    SlideDirection::Auto => {
+                        if anchor_top {
+                            RevealerTransitionType::SlideDown
+                        } else {
+                            RevealerTransitionType::SlideUp
+                        }
+                    }
+                    SlideDirection::Top => RevealerTransitionType::SlideDown,
+                    SlideDirection::Bottom => RevealerTransitionType::SlideUp,
+                    SlideDirection::Left => RevealerTransitionType::SlideRight,
+                    SlideDirection::Right => RevealerTransitionType::SlideLeft,
+                },
+                _ => unreachable!(),
+            };
+
+            revealer.set_transition_type(transition);
+            revealer.set_reveal_child(false);
+
+            (revealer.clone().upcast::<Widget>(), Some(revealer))
+        }
+    }
 }
 
 /// Load the bundled stylesheet as the default CSS for the whole

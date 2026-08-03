@@ -1,6 +1,6 @@
 [package]
 name = "audio-brightness-applet"
-version = "1.0.0"
+version = "1.0.1"
 edition = "2021"
 description = "A small GTK4 layer-shell popup for audio and brightness control"
 license = "BSD-4-Clause"
