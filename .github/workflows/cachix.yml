@@ -18,5 +18,6 @@ jobs:
         name: audio-brightness-applet
         authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
 
-    - name: Build Flake
-      run: nix build
+    - name: Build Flake and Push to Cachix
+      run: |
+        nix build --print-out-paths | cachix push audio-brightness-applet
