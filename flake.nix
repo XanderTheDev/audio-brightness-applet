@@ -1,6 +1,15 @@
 {
   description = "GTK4 Layer-Shell Audio and Brightness Control Applet";
 
+  nixConfig = {
+    extra-substituters = [
+      "https://audio-brightness-applet.cachix.org"
+    ];
+    extra-trusted-public-keys = [
+      "audio-brightness-applet.cachix.org-1:audio-brightness-applet.cachix.org-1:RCWMTeprJ+27QtkEg/0fbEkoDtI/Zqc8vUG/APXmJJw="
+    ];
+  };
+
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     flake-utils.url = "github:numtide/flake-utils";
@@ -29,7 +38,7 @@
         # Build Output (`nix build`)
         packages.default = pkgs.rustPlatform.buildRustPackage {
           pname = "audio-brightness-applet";
-          version = "1.0.0";
+          version = "0.1.0";
           src = ./.;
 
           cargoLock.lockFile = ./Cargo.lock;
@@ -53,7 +62,6 @@
             brightnessctl
           ]);
 
-          # Point rust-analyzer directly to the rustc source code provided by nixpkgs
           RUST_SRC_PATH = "${pkgs.rustc.src}/library";
         };
       }
