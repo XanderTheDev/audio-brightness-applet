@@ -51,6 +51,12 @@
           '';
         };
 
+        # App Runner Output (`nix run`)
+        apps.default = {
+          type = "app";
+          program = "${self.packages.${system}.default}/bin/audio-brightness-applet";
+        };
+
         # Shell for Development (`nix develop`)
         devShells.default = pkgs.mkShell {
           inherit buildInputs;
